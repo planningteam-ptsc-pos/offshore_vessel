@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Quản Lý Tàu Offshore 3D</title>
+    <title>Tổng Quan Tính Năng Tàu Offshore 3D</title>
     <style>
         body { 
             margin: 0; 
@@ -170,25 +170,25 @@
     <div class="vignette"></div>
     
     <div id="game-ui">
-        <div class="top-bar">Hệ Thống Quản Lý Tàu Biển</div>
+        <div class="top-bar">Tổng Quan Tính Năng Tàu Offshore</div>
         
         <div class="stats-panel">
-            <h1>OCEAN PIONEER</h1>
-            <h2>Vessel type: PSV (Platform Supply Vessel)</h2>
+            <h1>OCEAN TITAN</h1>
+            <h2>Vessel type: PSV (Heavy Supply)</h2>
             
             <div style="margin: 20px 0 10px 0; color: #f39c12; font-weight: bold; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">Capability</div>
 
             <div class="stat-row">
-                <div class="stat-label"><span>Max wave height</span> <span>4.5 m</span></div>
-                <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 75%;"></div></div>
-            </div>
-            <div class="stat-row">
-                <div class="stat-label"><span>Max wind speed</span> <span>45 knots</span></div>
+                <div class="stat-label"><span>Max wave height</span> <span>6.5 m</span></div>
                 <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 85%;"></div></div>
             </div>
             <div class="stat-row">
-                <div class="stat-label"><span>Current speed limit</span> <span>3.5 knots</span></div>
-                <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 40%;"></div></div>
+                <div class="stat-label"><span>Max wind speed</span> <span>55 knots</span></div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 90%;"></div></div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-label"><span>Cargo Capacity</span> <span>8,500 DWT</span></div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 70%;"></div></div>
             </div>
         </div>
 
@@ -217,206 +217,342 @@
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xdbe3e9); 
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(12, 8, -12);
+        // Kéo camera ra xa hơn nữa để thấy toàn cảnh con tàu rất lớn
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(28, 18, -28); 
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.7); 
         scene.add(ambientLight);
 
-        const spotlight = new THREE.SpotLight(0xffffff, 100);
-        spotlight.position.set(5, 15, -5);
+        const spotlight = new THREE.SpotLight(0xffffff, 180);
+        spotlight.position.set(15, 30, -15);
         spotlight.angle = Math.PI / 3;
         spotlight.castShadow = true;
+        spotlight.shadow.mapSize.width = 2048;
+        spotlight.shadow.mapSize.height = 2048;
         scene.add(spotlight);
 
-        const backLight = new THREE.DirectionalLight(0xffffff, 1);
-        backLight.position.set(-10, 5, 10);
+        const backLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        backLight.position.set(-20, 15, 20);
         scene.add(backLight);
 
-        // --- 2. DỰNG TÀU OFFSHORE (VESSEL) CHI TIẾT ---
+        // --- 2. DỰNG TÀU OFFSHORE (VESSEL) CHI TIẾT & KÍCH THƯỚC SIÊU LỚN ---
         const vessel = new THREE.Group();
-        let radarScanner; // Biến để lưu cụm radar giúp nó xoay tròn
+        let radarScanner;
 
-        // Định nghĩa các chất liệu (Materials)
-        const hullMat = new THREE.MeshStandardMaterial({ color: 0x1c2833, roughness: 0.7 }); 
-        const redMat = new THREE.MeshStandardMaterial({ color: 0x922b21, roughness: 0.7 });
+        // Materials
+        const hullMat = new THREE.MeshStandardMaterial({ color: 0x112233, roughness: 0.7 }); 
+        const redMat = new THREE.MeshStandardMaterial({ color: 0x8b0000, roughness: 0.7 });
         const cabinMat = new THREE.MeshStandardMaterial({ color: 0xfdfefe, roughness: 0.3 });
         const deckMat = new THREE.MeshStandardMaterial({ color: 0x5d6d7e, roughness: 0.9 });
         const helipadMat = new THREE.MeshStandardMaterial({ color: 0x1e8449, roughness: 0.6 });
         const glassMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0.8 });
         const yellowMat = new THREE.MeshStandardMaterial({ color: 0xf1c40f, roughness: 0.4 });
         const orangeMat = new THREE.MeshStandardMaterial({ color: 0xe67e22, roughness: 0.4 });
+        const darkGreyMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
         const containerMatBlue = new THREE.MeshStandardMaterial({ color: 0x2980b9 });
         const containerMatRed = new THREE.MeshStandardMaterial({ color: 0xc0392b });
+        const containerMatGreen = new THREE.MeshStandardMaterial({ color: 0x27ae60 });
+        const pipeMat = new THREE.MeshStandardMaterial({ color: 0x7f8c8d, metalness: 0.6, roughness: 0.4 });
 
-        // A. Thân tàu chính (Main Hull & Bow)
-        const hullWidth = 2.8;
-        const hullHeight = 1.4;
-        const hullLength = 8;
-        const bowLength = 3.5;
+        // A. Kích thước thân tàu (Tăng mạnh)
+        const hullWidth = 6.4; // Tăng rất nhiều bề rộng
+        const hullHeight = 1.8;
+        const hullLength = 14.0; // Dài hơn
+        const bowLength = 5.0;
+        const sternLength = 3.5; 
         const bowRadius = hullWidth / Math.sqrt(2); 
+        const bowFrontRadius = 1.5; 
+        const sternFrontRadius = 3.0; 
 
         // Khối chữ nhật thân giữa
         const mainHull = new THREE.Mesh(new THREE.BoxGeometry(hullWidth, hullHeight, hullLength), hullMat);
-        mainHull.position.set(0, hullHeight/2, 1);
+        mainHull.position.set(0, hullHeight/2, 0);
         mainHull.castShadow = true;
         vessel.add(mainHull);
 
-        // Mũi tàu nhọn (Dùng hình nón 4 cạnh chóp xoay ngang)
-        const bow = new THREE.Mesh(new THREE.ConeGeometry(bowRadius, bowLength, 4), hullMat);
+        // Mũi tàu 
+        const bow = new THREE.Mesh(new THREE.CylinderGeometry(bowFrontRadius, bowRadius, bowLength, 4), hullMat);
         bow.rotation.x = -Math.PI / 2;
         bow.rotation.y = Math.PI / 4;
-        bow.position.set(0, hullHeight/2, 1 - hullLength/2 - bowLength/2); 
+        bow.position.set(0, hullHeight/2, -hullLength/2 - bowLength/2); 
         bow.castShadow = true;
         vessel.add(bow);
 
+        // Đuôi tàu 
+        const stern = new THREE.Mesh(new THREE.CylinderGeometry(sternFrontRadius, bowRadius, sternLength, 4), hullMat);
+        stern.rotation.x = Math.PI / 2;
+        stern.rotation.y = Math.PI / 4;
+        stern.position.set(0, hullHeight/2, hullLength/2 + sternLength/2);
+        stern.castShadow = true;
+        vessel.add(stern);
+
         // B. Đáy tàu màu đỏ
-        const bottomHeight = 0.5;
+        const bottomHeight = 0.8;
         const mainBottom = new THREE.Mesh(new THREE.BoxGeometry(hullWidth - 0.05, bottomHeight, hullLength), redMat);
-        mainBottom.position.set(0, -bottomHeight/2, 1);
+        mainBottom.position.set(0, -bottomHeight/2, 0);
         vessel.add(mainBottom);
 
-        const bowBottom = new THREE.Mesh(new THREE.ConeGeometry(bowRadius - 0.02, bowLength, 4), redMat);
+        const bowBottom = new THREE.Mesh(new THREE.CylinderGeometry(bowFrontRadius - 0.02, bowRadius - 0.02, bowLength, 4), redMat);
         bowBottom.rotation.x = -Math.PI / 2;
         bowBottom.rotation.y = Math.PI / 4;
-        bowBottom.position.set(0, -bottomHeight/2, 1 - hullLength/2 - bowLength/2);
+        bowBottom.position.set(0, -bottomHeight/2, -hullLength/2 - bowLength/2);
         vessel.add(bowBottom);
 
-        // C. Boong chở hàng & Lan can (Aft Deck)
-        const deck = new THREE.Mesh(new THREE.BoxGeometry(hullWidth - 0.2, 0.1, 5.5), deckMat);
-        deck.position.set(0, hullHeight + 0.05, 2.0);
+        const sternBottom = new THREE.Mesh(new THREE.CylinderGeometry(sternFrontRadius - 0.02, bowRadius - 0.02, sternLength, 4), redMat);
+        sternBottom.rotation.x = Math.PI / 2;
+        sternBottom.rotation.y = Math.PI / 4;
+        sternBottom.position.set(0, -bottomHeight/2, hullLength/2 + sternLength/2);
+        vessel.add(sternBottom);
+
+        // C. Boong chở hàng khổng lồ (Aft Deck)
+        const deckWidth = hullWidth - 0.2;
+        const deckLength = 11.5;
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(deckWidth, 0.1, deckLength), deckMat);
+        deck.position.set(0, hullHeight + 0.05, 2.5);
         deck.receiveShadow = true;
         vessel.add(deck);
 
-        // D. Khối Thượng Tầng (Superstructure / Cabin)
-        // Tầng 1
-        const cabin1 = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 3.5), cabinMat);
-        cabin1.position.set(0, 2.0, -2.5);
+        // D. Khối Thượng Tầng (Superstructure)
+        const cabinZ = -4.5; // Dịch lên phía trước
+        const cabin1 = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.4, 4.5), cabinMat);
+        cabin1.position.set(0, hullHeight + 0.7, cabinZ);
         cabin1.castShadow = true;
         vessel.add(cabin1);
         
-        // Tầng 2
-        const cabin2 = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.0, 2.5), cabinMat);
-        cabin2.position.set(0, 3.1, -2.5);
+        const cabin2 = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.2, 3.5), cabinMat);
+        cabin2.position.set(0, hullHeight + 1.4 + 0.6, cabinZ);
         cabin2.castShadow = true;
         vessel.add(cabin2);
 
-        // Buồng lái (Bridge) bao quanh bằng kính
-        const bridge = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.8, 2.0), glassMat);
-        bridge.position.set(0, 4.0, -2.5);
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(4.0, 1.0, 3.0), glassMat);
+        bridge.position.set(0, hullHeight + 1.4 + 1.2 + 0.5, cabinZ);
         bridge.castShadow = true;
         vessel.add(bridge);
 
-        // Mái buồng lái
-        const roof = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.1, 2.1), cabinMat);
-        roof.position.set(0, 4.45, -2.5);
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.1, 3.2), cabinMat);
+        roof.position.set(0, hullHeight + 1.4 + 1.2 + 1.0 + 0.05, cabinZ);
         vessel.add(roof);
 
-        // E. Sân bay trực thăng (Helipad) ở mũi tàu
+        // E. Sân bay trực thăng (Helipad) siêu lớn
         const helipadGroup = new THREE.Group();
-        const helipad = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.1, 32), helipadMat);
-        helipad.position.set(0, 3.0, -5.5);
+        const helipadZ = -9.5;
+        const helipadY = 4.6;
+        const helipadRadius = 3.8; // Mở rộng kịch trần
+        const helipad = new THREE.Mesh(new THREE.CylinderGeometry(helipadRadius, helipadRadius, 0.1, 32), helipadMat);
+        helipad.position.set(0, helipadY, helipadZ);
         helipad.castShadow = true;
         helipadGroup.add(helipad);
         
-        // Chữ H trên Helipad
+        // Chữ H lớn hơn
         const hMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const h1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 1.0), hMat);
-        h1.position.set(-0.4, 3.0, -5.5);
-        const h2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 1.0), hMat);
-        h2.position.set(0.4, 3.0, -5.5);
-        const h3 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.12, 0.2), hMat);
-        h3.position.set(0, 3.0, -5.5);
+        const h1 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.12, 2.2), hMat);
+        h1.position.set(-1.0, helipadY, helipadZ);
+        const h2 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.12, 2.2), hMat);
+        h2.position.set(1.0, helipadY, helipadZ);
+        const h3 = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.12, 0.35), hMat);
+        h3.position.set(0, helipadY, helipadZ);
         helipadGroup.add(h1, h2, h3);
 
-        // Trụ đỡ Helipad
-        const pillarGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.6);
-        const pillar1 = new THREE.Mesh(pillarGeo, cabinMat); pillar1.position.set(-0.8, 2.2, -5.0);
-        const pillar2 = new THREE.Mesh(pillarGeo, cabinMat); pillar2.position.set(0.8, 2.2, -5.0);
-        helipadGroup.add(pillar1, pillar2);
+        // 4 trụ đỡ đan chéo cho chân thực
+        const pillarGeo = new THREE.CylinderGeometry(0.15, 0.15, 2.8);
+        const p1 = new THREE.Mesh(pillarGeo, cabinMat); p1.position.set(-2.5, 3.2, -8.5); p1.rotation.x = -0.1; p1.rotation.z = 0.1;
+        const p2 = new THREE.Mesh(pillarGeo, cabinMat); p2.position.set(2.5, 3.2, -8.5); p2.rotation.x = -0.1; p2.rotation.z = -0.1;
+        const p3 = new THREE.Mesh(pillarGeo, cabinMat); p3.position.set(-1.5, 3.2, -10.5); p3.rotation.x = 0.1;
+        const p4 = new THREE.Mesh(pillarGeo, cabinMat); p4.position.set(1.5, 3.2, -10.5); p4.rotation.x = 0.1;
+        helipadGroup.add(p1, p2, p3, p4);
         vessel.add(helipadGroup);
 
-        // F. Cột Radar (Động)
-        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.5), cabinMat);
-        mast.position.set(0, 5.2, -2.0);
+        // F. Cột Radar
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.0), cabinMat);
+        mast.position.set(0, 6.2, -4.0);
         vessel.add(mast);
 
-        radarScanner = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.1, 0.1), hullMat);
-        radarScanner.position.set(0, 5.9, -2.0);
+        radarScanner = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.15, 0.15), hullMat);
+        radarScanner.position.set(0, 7.2, -4.0);
         vessel.add(radarScanner);
 
-        // G. Xuồng cứu sinh (Lifeboats)
-        const lifeboatGeo = new THREE.CylinderGeometry(0.3, 0.3, 1.2, 16);
+        // G. Xuồng cứu sinh (Lifeboats) đưa ra xa hơn
+        const lifeboatGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.6, 16);
         const lifeboat1 = new THREE.Mesh(lifeboatGeo, orangeMat);
         lifeboat1.rotation.x = Math.PI / 2;
-        lifeboat1.position.set(-1.4, 2.0, -1.5);
+        lifeboat1.position.set(-3.2, 2.5, -3.0);
         const lifeboat2 = new THREE.Mesh(lifeboatGeo, orangeMat);
         lifeboat2.rotation.x = Math.PI / 2;
-        lifeboat2.position.set(1.4, 2.0, -1.5);
+        lifeboat2.position.set(3.2, 2.5, -3.0);
         vessel.add(lifeboat1, lifeboat2);
 
-        // H. Cần cẩu (Crane)
-        const craneBase = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.2), yellowMat);
-        craneBase.position.set(-1.0, 2.0, 4.0);
-        craneBase.castShadow = true;
-        const craneArm = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 3.0), yellowMat);
-        craneArm.position.set(-1.0, 3.2, 3.0);
-        craneArm.rotation.x = Math.PI / 5;
-        craneArm.castShadow = true;
-        vessel.add(craneBase, craneArm);
+        // H. CẦN CẨU CỰC KỲ CHI TIẾT (Ultra Detailed Crane)
+        const craneGroup = new THREE.Group();
+        craneGroup.position.set(-2.6, hullHeight + 0.1, 5.0);
 
-        // I. Hàng hóa trên boong (Cargo)
-        const container1 = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 2.5), containerMatBlue);
-        container1.position.set(0.5, 1.9, 1.5);
-        container1.castShadow = true;
-        const container2 = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 2.5), containerMatRed);
-        container2.position.set(0.5, 2.9, 1.5); // Xếp chồng lên
-        container2.castShadow = true;
-        vessel.add(container1, container2);
+        // Bệ đỡ xoay (Pedestal)
+        const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 1.2, 16), yellowMat);
+        pedestal.position.set(0, 0.6, 0);
+        pedestal.castShadow = true;
+        const bearing = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.2, 16), darkGreyMat);
+        bearing.position.set(0, 1.2, 0);
+        bearing.castShadow = true;
 
+        // Khối quay trên (Crane Upper)
+        const craneUpper = new THREE.Group();
+        craneUpper.position.set(0, 1.3, 0);
+        craneUpper.rotation.y = Math.PI / 4; 
+
+        // Buồng máy (Machinery house)
+        const machHouse = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.2, 2.0), yellowMat);
+        machHouse.position.set(0, 0.6, -0.6);
+        machHouse.castShadow = true;
+        
+        // Buồng lái cho thợ cẩu (Operator Cabin)
+        const opCabin = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 1.0), yellowMat);
+        opCabin.position.set(-0.7, 0.5, 0.5); 
+        const opWindow = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.6, 0.7), glassMat);
+        opWindow.position.set(-0.7, 0.6, 0.65);
+        craneUpper.add(machHouse, opCabin, opWindow);
+
+        // Khung chữ A hỗ trợ cáp phía sau buồng máy (A-Frame)
+        const aFrameGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.5);
+        const aFrameL = new THREE.Mesh(aFrameGeo, yellowMat);
+        aFrameL.position.set(-0.5, 1.6, -1.2); aFrameL.rotation.x = Math.PI / 8; aFrameL.rotation.z = -Math.PI / 16;
+        const aFrameR = new THREE.Mesh(aFrameGeo, yellowMat);
+        aFrameR.position.set(0.5, 1.6, -1.2); aFrameR.rotation.x = Math.PI / 8; aFrameR.rotation.z = Math.PI / 16;
+        const aFrameTop = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.2), darkGreyMat);
+        aFrameTop.rotation.z = Math.PI / 2; aFrameTop.position.set(0, 2.2, -1.4);
+        craneUpper.add(aFrameL, aFrameR, aFrameTop);
+
+        // Trục tời cáp (Winch Drum) trên nóc
+        const winch = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 1.0), darkGreyMat);
+        winch.rotation.z = Math.PI / 2;
+        winch.position.set(0, 1.4, -0.8);
+        craneUpper.add(winch);
+
+        // Cần chính (Main Boom) - Lớn và dài hơn
+        const boomLength = 7.0;
+        const boomAngle = Math.PI / 5;
+        const boomGeo = new THREE.BoxGeometry(0.4, 0.4, boomLength);
+        boomGeo.translate(0, 0, boomLength/2); 
+        const boom = new THREE.Mesh(boomGeo, yellowMat);
+        boom.position.set(0, 0.8, 0.4);
+        boom.rotation.x = -boomAngle; 
+        boom.castShadow = true;
+
+        // 2 Xi-lanh thủy lực song song (Dual Pistons)
+        const pistonBaseL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.0), yellowMat);
+        pistonBaseL.position.set(-0.15, 0.2, 1.0); pistonBaseL.rotation.x = -Math.PI / 4 + 0.1;
+        const pistonBaseR = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.0), yellowMat);
+        pistonBaseR.position.set(0.15, 0.2, 1.0); pistonBaseR.rotation.x = -Math.PI / 4 + 0.1;
+        
+        const pistonRodL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.0), new THREE.MeshStandardMaterial({color: 0xaaaaaa, metalness: 0.8}));
+        pistonRodL.position.set(-0.15, 0.8, 1.5); pistonRodL.rotation.x = -Math.PI / 4 + 0.1;
+        const pistonRodR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.0), new THREE.MeshStandardMaterial({color: 0xaaaaaa, metalness: 0.8}));
+        pistonRodR.position.set(0.15, 0.8, 1.5); pistonRodR.rotation.x = -Math.PI / 4 + 0.1;
+        
+        craneUpper.add(boom, pistonBaseL, pistonBaseR, pistonRodL, pistonRodR);
+
+        // Cáp neo giữ từ khung chữ A đến tay cần (Tension Cable)
+        const tCable = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 3.5), darkGreyMat);
+        tCable.position.set(0, 2.0, 0.5); tCable.rotation.x = Math.PI / 4;
+        craneUpper.add(tCable);
+
+        // Cáp và Móc cẩu thả xuống
+        const boomEndY = 0.8 + Math.sin(boomAngle) * boomLength;
+        const boomEndZ = 0.4 + Math.cos(boomAngle) * boomLength;
+        const cableLength = 5.0;
+        const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, cableLength), darkGreyMat);
+        cable.position.set(0, boomEndY - cableLength/2, boomEndZ);
+        const hook = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.4), redMat);
+        hook.position.set(0, boomEndY - cableLength, boomEndZ);
+        
+        craneUpper.add(cable, hook);
+        craneGroup.add(pedestal, bearing, craneUpper);
+        vessel.add(craneGroup);
+
+        // I. Hàng hóa đa dạng trên boong (Deck Cargo) nhiều hơn do boong rộng
+        const c1 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 3.0), containerMatBlue);
+        c1.position.set(2.0, hullHeight + 0.1 + 0.6, 2.0); c1.castShadow = true;
+        const c2 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 3.0), containerMatRed);
+        c2.position.set(2.0, hullHeight + 0.1 + 1.8, 2.0); c2.castShadow = true;
+        const c3 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 3.0), containerMatGreen);
+        c3.position.set(-2.0, hullHeight + 0.1 + 0.6, 1.0); c3.castShadow = true;
+        
+        // Thêm hàng chục ống nước/khoan dàn đều
+        for(let i=0; i<8; i++) {
+            const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 5.0), pipeMat);
+            pipe.rotation.x = Math.PI / 2; pipe.position.set(1.0 + i*0.3, hullHeight + 0.1 + 0.15, 6.0);
+            pipe.castShadow = true; vessel.add(pipe);
+        }
+        for(let i=0; i<7; i++) {
+            const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 5.0), pipeMat);
+            pipe.rotation.x = Math.PI / 2; pipe.position.set(1.15 + i*0.3, hullHeight + 0.1 + 0.4, 6.0);
+            pipe.castShadow = true; vessel.add(pipe);
+        }
+        for(let i=0; i<6; i++) {
+            const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 5.0), pipeMat);
+            pipe.rotation.x = Math.PI / 2; pipe.position.set(1.3 + i*0.3, hullHeight + 0.1 + 0.65, 6.0);
+            pipe.castShadow = true; vessel.add(pipe);
+        }
+
+        vessel.add(c1, c2, c3);
         scene.add(vessel);
 
-        // Bục (Sàn) hiển thị
-        const floor = new THREE.Mesh(
-            new THREE.CircleGeometry(12, 64),
-            new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5, metalness: 0.2 })
-        );
-        floor.rotation.x = -Math.PI / 2;
-        floor.receiveShadow = true;
-        scene.add(floor);
+        // --- 3. VÒNG TRÒN NƯỚC MỞ RỘNG (45 units) CHO TÀU LỚN ---
+        const poolRadius = 45;
+        const poolBaseGeo = new THREE.CylinderGeometry(poolRadius, poolRadius, 2, 64);
+        const poolBaseMat = new THREE.MeshStandardMaterial({ 
+            color: 0x0288d1, roughness: 0.8, metalness: 0.0,
+            emissive: 0x0288d1, emissiveIntensity: 0.2
+        });
+        const poolBase = new THREE.Mesh(poolBaseGeo, poolBaseMat);
+        poolBase.position.y = -1.5;
+        scene.add(poolBase);
 
-        // --- 3. BIẾN KIỂM SOÁT TỰ ĐỘNG XOAY ---
+        const oceanGeo = new THREE.RingGeometry(0, poolRadius, 80, 32); // Lưới chi tiết hơn
+        oceanGeo.rotateX(-Math.PI / 2); 
+        const oceanMat = new THREE.MeshStandardMaterial({
+            color: 0x0288d1, roughness: 0.8, metalness: 0.0,
+            emissive: 0x0288d1, emissiveIntensity: 0.2,
+            flatShading: false, side: THREE.DoubleSide
+        });
+
+        const oceanFloor = new THREE.Mesh(oceanGeo, oceanMat);
+        oceanFloor.position.y = -0.4;
+        oceanFloor.receiveShadow = true;
+        scene.add(oceanFloor);
+
+        // --- 4. BIẾN KIỂM SOÁT TỰ ĐỘNG XOAY ---
         let autoRotate = true;       
         let isUserInteracting = false; 
         let isHoveringMarker = false;  
 
-        // --- 4. HỆ THỐNG ANNOTATION ---
+        // --- 5. HỆ THỐNG ANNOTATION (Cập nhật tọa độ theo tàu mới) ---
         const annotationData = [
             {
                 title: "Sân bay trực thăng (Helipad)",
-                desc: "Khu vực hạ cánh nhô ra phía mũi tàu, thiết kế lưới an toàn chuẩn cho trực thăng cứu hộ.",
-                position: new THREE.Vector3(0, 3.2, -5.5) 
+                desc: "Được mở rộng cực đại đạt tiêu chuẩn cho dòng trực thăng hạng nặng. 4 trụ chịu lực gia cố thép.",
+                position: new THREE.Vector3(0, 4.6, -9.5) 
             },
             {
                 title: "Buồng lái toàn cảnh (Bridge)",
-                desc: "Trung tâm chỉ huy được bọc kính 360 độ, trang bị hệ thống định vị động (DP2).",
-                position: new THREE.Vector3(0, 4.2, -2.5) 
+                desc: "Trung tâm chỉ huy dịch chuyển về mũi, đảm bảo tầm nhìn hoàn hảo bao quát cả chiều dài 14m.",
+                position: new THREE.Vector3(0, 5.5, -4.5) 
             },
             {
                 title: "Boong chở hàng (Aft Deck)",
-                desc: "Khu vực boong rộng chở hàng hóa, ống khoan và hóa chất phục vụ giàn khoan dầu.",
-                position: new THREE.Vector3(0.5, 2.5, 1.5) 
+                desc: "Chiều dài hơn 11 mét chứa đựng khối lượng ống thép và hóa chất siêu khủng phục vụ dàn khoan.",
+                position: new THREE.Vector3(1.0, 2.5, 4.0) 
             },
             {
-                title: "Cần cẩu hạng nặng (Crane)",
-                desc: "Cẩu trục công suất lớn dùng để bốc dỡ hàng hóa và thiết bị ngầm dưới biển.",
-                position: new THREE.Vector3(-1.0, 3.5, 3.5) 
+                title: "Cần cẩu siêu trường (Advanced Crane)",
+                desc: "Trang bị tời kéo, tay đòn đôi, bệ chữ A và 2 xilanh thủy lực lớn đảm bảo bốc dỡ hàng chục tấn.",
+                position: new THREE.Vector3(-2.6, 4.5, 5.0) 
             }
         ];
 
@@ -477,39 +613,52 @@
             });
         }
 
-        // --- 5. ĐIỀU KHIỂN & VÒNG LẶP ---
+        // --- 6. ĐIỀU KHIỂN & VÒNG LẶP ---
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.maxPolarAngle = Math.PI / 2 - 0.05;
-        controls.minDistance = 6;
-        controls.maxDistance = 25;
+        controls.minDistance = 15;
+        controls.maxDistance = 60;
 
-        // Xử lý sự kiện: Dừng xoay khi chạm, Xoay lại khi nhả tay (Yêu cầu 2)
-        controls.addEventListener('start', () => {
-            isUserInteracting = true; 
-        });
-        
-        controls.addEventListener('end', () => {
-            isUserInteracting = false; // Nhả chuột ra thì biến này thành false -> tàu xoay tiếp
-        });
+        controls.addEventListener('start', () => { isUserInteracting = true; });
+        controls.addEventListener('end', () => { isUserInteracting = false; });
 
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
             
-            // Xoay tàu nếu người dùng không chạm và không hover marker
+            const time = Date.now() * 0.0015;
+
+            // Xoay tàu
             if (autoRotate && !isUserInteracting && !isHoveringMarker) {
                 vessel.rotation.y += 0.003; 
             }
 
-            // Radar trên nóc tàu luôn luôn quay quét liên tục
+            // Radar quay
             if (radarScanner) {
                 radarScanner.rotation.y += 0.05;
             }
 
-            // Hiệu ứng dập dềnh mô phỏng tàu nổi trên sóng
-            const time = Date.now() * 0.0015;
-            vessel.position.y = Math.sin(time) * 0.05;
+            // Hiệu ứng dập dềnh & lắc lư nhẹ của tàu siêu trọng
+            vessel.position.y = Math.sin(time * 2.0) * 0.15 + Math.cos(time * 1.2) * 0.05;
+            vessel.rotation.z = Math.sin(time * 1.5) * 0.03; 
+            vessel.rotation.x = Math.cos(time * 1.8) * 0.02; 
+
+            // --- ANIMATION GỢN SÓNG 3D ---
+            const positionAttribute = oceanGeo.attributes.position;
+            for ( let i = 0; i < positionAttribute.count; i ++ ) {
+                const x = positionAttribute.getX(i);
+                const z = positionAttribute.getZ(i);
+                
+                const dist = Math.sqrt(x*x + z*z);
+                const y = Math.sin(dist * 0.4 - time * 2) * 0.3 + 
+                          Math.sin(x * 0.3 + time) * 0.15 + 
+                          Math.cos(z * 0.3 + time * 0.8) * 0.15;
+                
+                positionAttribute.setY(i, y); 
+            }
+            positionAttribute.needsUpdate = true; 
+            oceanGeo.computeVertexNormals(); 
 
             updateMarkers();
             renderer.render(scene, camera);
