@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý Tàu Offshore 3D</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #dbe3e9; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333; 
+            user-select: none;
+        }
+        
+        .vignette {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            box-shadow: 0 0 150px rgba(0,0,0,0.15) inset;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        #game-ui {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; 
+            z-index: 10;
+        }
+
+        .top-bar {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.3), transparent);
+            padding: 20px;
+            text-align: center;
+            font-size: 18px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #d35400; 
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
+        }
+
+        .stats-panel {
+            position: absolute;
+            right: 40px;
+            top: 100px;
+            width: 300px;
+            background: rgba(20, 25, 30, 0.85); 
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(8px);
+            pointer-events: auto; 
+            color: #ecf0f1;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .stats-panel h1 {
+            margin: 0 0 5px 0;
+            font-size: 28px;
+            text-transform: uppercase;
+            color: #f1c40f;
+        }
+        
+        .stats-panel h2 {
+            margin: 0 0 20px 0;
+            font-size: 14px;
+            color: #bdc3c7;
+            font-weight: normal;
+        }
+
+        .stat-row { margin-bottom: 15px; }
+
+        .stat-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 5px;
+            color: #ecf0f1;
+        }
+
+        .stat-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #f1c40f);
+            width: 0%; 
+        }
+
+        .marker {
+            position: absolute;
+            width: 30px; height: 30px;
+            transform: translate(-50%, -50%); 
+            pointer-events: auto;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            display: none; 
+        }
+
+        .marker-ring {
+            position: absolute;
+            width: 24px; height: 24px;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .marker-dot {
+            width: 6px; height: 6px;
+            background: rgba(255, 255, 255, 1);
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 3px rgba(0,0,0,0.5);
+        }
+
+        .marker:hover .marker-ring {
+            width: 32px; height: 32px;
+            border-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.3);
+        }
+
+        .marker:hover .marker-dot {
+            background: #e74c3c;
+            box-shadow: 0 0 10px #e74c3c;
+        }
+
+        #detail-panel {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 15, 20, 0.9);
+            border-left: 4px solid #e74c3c;
+            padding: 20px;
+            width: 400px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            color: #ecf0f1;
+            border-radius: 0 8px 8px 0;
+        }
+
+        #detail-panel h3 {
+            margin: 0 0 10px 0;
+            color: #f1c40f;
+            font-size: 18px;
+        }
+
+        #detail-panel p {
+            margin: 0;
+            font-size: 14px;
+            color: #bdc3c7;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="vignette"></div>
+    
+    <div id="game-ui">
+        <div class="top-bar">Hệ Thống Quản Lý Tàu Biển</div>
+        
+        <div class="stats-panel">
+            <h1>OCEAN PIONEER</h1>
+            <h2>Vessel type: PSV (Platform Supply Vessel)</h2>
+            
+            <div style="margin: 20px 0 10px 0; color: #f39c12; font-weight: bold; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">Capability</div>
+
+            <div class="stat-row">
+                <div class="stat-label"><span>Max wave height</span> <span>4.5 m</span></div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 75%;"></div></div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-label"><span>Max wind speed</span> <span>45 knots</span></div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 85%;"></div></div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-label"><span>Current speed limit</span> <span>3.5 knots</span></div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 40%;"></div></div>
+            </div>
+        </div>
+
+        <div id="markers-container"></div>
+
+        <div id="detail-panel">
+            <h3 id="detail-title">Tên bộ phận</h3>
+            <p id="detail-desc">Mô tả chi tiết bộ phận sẽ hiện ở đây...</p>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- 1. THIẾT LẬP CƠ BẢN ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xdbe3e9); 
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(12, 8, -12);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7); 
+        scene.add(ambientLight);
+
+        const spotlight = new THREE.SpotLight(0xffffff, 100);
+        spotlight.position.set(5, 15, -5);
+        spotlight.angle = Math.PI / 3;
+        spotlight.castShadow = true;
+        scene.add(spotlight);
+
+        const backLight = new THREE.DirectionalLight(0xffffff, 1);
+        backLight.position.set(-10, 5, 10);
+        scene.add(backLight);
+
+        // --- 2. DỰNG TÀU OFFSHORE (VESSEL) CHI TIẾT ---
+        const vessel = new THREE.Group();
+        let radarScanner; // Biến để lưu cụm radar giúp nó xoay tròn
+
+        // Định nghĩa các chất liệu (Materials)
+        const hullMat = new THREE.MeshStandardMaterial({ color: 0x1c2833, roughness: 0.7 }); 
+        const redMat = new THREE.MeshStandardMaterial({ color: 0x922b21, roughness: 0.7 });
+        const cabinMat = new THREE.MeshStandardMaterial({ color: 0xfdfefe, roughness: 0.3 });
+        const deckMat = new THREE.MeshStandardMaterial({ color: 0x5d6d7e, roughness: 0.9 });
+        const helipadMat = new THREE.MeshStandardMaterial({ color: 0x1e8449, roughness: 0.6 });
+        const glassMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0.8 });
+        const yellowMat = new THREE.MeshStandardMaterial({ color: 0xf1c40f, roughness: 0.4 });
+        const orangeMat = new THREE.MeshStandardMaterial({ color: 0xe67e22, roughness: 0.4 });
+        const containerMatBlue = new THREE.MeshStandardMaterial({ color: 0x2980b9 });
+        const containerMatRed = new THREE.MeshStandardMaterial({ color: 0xc0392b });
+
+        // A. Thân tàu chính (Main Hull & Bow)
+        const hullWidth = 2.8;
+        const hullHeight = 1.4;
+        const hullLength = 8;
+        const bowLength = 3.5;
+        const bowRadius = hullWidth / Math.sqrt(2); 
+
+        // Khối chữ nhật thân giữa
+        const mainHull = new THREE.Mesh(new THREE.BoxGeometry(hullWidth, hullHeight, hullLength), hullMat);
+        mainHull.position.set(0, hullHeight/2, 1);
+        mainHull.castShadow = true;
+        vessel.add(mainHull);
+
+        // Mũi tàu nhọn (Dùng hình nón 4 cạnh chóp xoay ngang)
+        const bow = new THREE.Mesh(new THREE.ConeGeometry(bowRadius, bowLength, 4), hullMat);
+        bow.rotation.x = -Math.PI / 2;
+        bow.rotation.y = Math.PI / 4;
+        bow.position.set(0, hullHeight/2, 1 - hullLength/2 - bowLength/2); 
+        bow.castShadow = true;
+        vessel.add(bow);
+
+        // B. Đáy tàu màu đỏ
+        const bottomHeight = 0.5;
+        const mainBottom = new THREE.Mesh(new THREE.BoxGeometry(hullWidth - 0.05, bottomHeight, hullLength), redMat);
+        mainBottom.position.set(0, -bottomHeight/2, 1);
+        vessel.add(mainBottom);
+
+        const bowBottom = new THREE.Mesh(new THREE.ConeGeometry(bowRadius - 0.02, bowLength, 4), redMat);
+        bowBottom.rotation.x = -Math.PI / 2;
+        bowBottom.rotation.y = Math.PI / 4;
+        bowBottom.position.set(0, -bottomHeight/2, 1 - hullLength/2 - bowLength/2);
+        vessel.add(bowBottom);
+
+        // C. Boong chở hàng & Lan can (Aft Deck)
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(hullWidth - 0.2, 0.1, 5.5), deckMat);
+        deck.position.set(0, hullHeight + 0.05, 2.0);
+        deck.receiveShadow = true;
+        vessel.add(deck);
+
+        // D. Khối Thượng Tầng (Superstructure / Cabin)
+        // Tầng 1
+        const cabin1 = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 3.5), cabinMat);
+        cabin1.position.set(0, 2.0, -2.5);
+        cabin1.castShadow = true;
+        vessel.add(cabin1);
+        
+        // Tầng 2
+        const cabin2 = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.0, 2.5), cabinMat);
+        cabin2.position.set(0, 3.1, -2.5);
+        cabin2.castShadow = true;
+        vessel.add(cabin2);
+
+        // Buồng lái (Bridge) bao quanh bằng kính
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.8, 2.0), glassMat);
+        bridge.position.set(0, 4.0, -2.5);
+        bridge.castShadow = true;
+        vessel.add(bridge);
+
+        // Mái buồng lái
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.1, 2.1), cabinMat);
+        roof.position.set(0, 4.45, -2.5);
+        vessel.add(roof);
+
+        // E. Sân bay trực thăng (Helipad) ở mũi tàu
+        const helipadGroup = new THREE.Group();
+        const helipad = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.1, 32), helipadMat);
+        helipad.position.set(0, 3.0, -5.5);
+        helipad.castShadow = true;
+        helipadGroup.add(helipad);
+        
+        // Chữ H trên Helipad
+        const hMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const h1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 1.0), hMat);
+        h1.position.set(-0.4, 3.0, -5.5);
+        const h2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 1.0), hMat);
+        h2.position.set(0.4, 3.0, -5.5);
+        const h3 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.12, 0.2), hMat);
+        h3.position.set(0, 3.0, -5.5);
+        helipadGroup.add(h1, h2, h3);
+
+        // Trụ đỡ Helipad
+        const pillarGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.6);
+        const pillar1 = new THREE.Mesh(pillarGeo, cabinMat); pillar1.position.set(-0.8, 2.2, -5.0);
+        const pillar2 = new THREE.Mesh(pillarGeo, cabinMat); pillar2.position.set(0.8, 2.2, -5.0);
+        helipadGroup.add(pillar1, pillar2);
+        vessel.add(helipadGroup);
+
+        // F. Cột Radar (Động)
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.5), cabinMat);
+        mast.position.set(0, 5.2, -2.0);
+        vessel.add(mast);
+
+        radarScanner = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.1, 0.1), hullMat);
+        radarScanner.position.set(0, 5.9, -2.0);
+        vessel.add(radarScanner);
+
+        // G. Xuồng cứu sinh (Lifeboats)
+        const lifeboatGeo = new THREE.CylinderGeometry(0.3, 0.3, 1.2, 16);
+        const lifeboat1 = new THREE.Mesh(lifeboatGeo, orangeMat);
+        lifeboat1.rotation.x = Math.PI / 2;
+        lifeboat1.position.set(-1.4, 2.0, -1.5);
+        const lifeboat2 = new THREE.Mesh(lifeboatGeo, orangeMat);
+        lifeboat2.rotation.x = Math.PI / 2;
+        lifeboat2.position.set(1.4, 2.0, -1.5);
+        vessel.add(lifeboat1, lifeboat2);
+
+        // H. Cần cẩu (Crane)
+        const craneBase = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.2), yellowMat);
+        craneBase.position.set(-1.0, 2.0, 4.0);
+        craneBase.castShadow = true;
+        const craneArm = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 3.0), yellowMat);
+        craneArm.position.set(-1.0, 3.2, 3.0);
+        craneArm.rotation.x = Math.PI / 5;
+        craneArm.castShadow = true;
+        vessel.add(craneBase, craneArm);
+
+        // I. Hàng hóa trên boong (Cargo)
+        const container1 = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 2.5), containerMatBlue);
+        container1.position.set(0.5, 1.9, 1.5);
+        container1.castShadow = true;
+        const container2 = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 2.5), containerMatRed);
+        container2.position.set(0.5, 2.9, 1.5); // Xếp chồng lên
+        container2.castShadow = true;
+        vessel.add(container1, container2);
+
+        scene.add(vessel);
+
+        // Bục (Sàn) hiển thị
+        const floor = new THREE.Mesh(
+            new THREE.CircleGeometry(12, 64),
+            new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5, metalness: 0.2 })
+        );
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // --- 3. BIẾN KIỂM SOÁT TỰ ĐỘNG XOAY ---
+        let autoRotate = true;       
+        let isUserInteracting = false; 
+        let isHoveringMarker = false;  
+
+        // --- 4. HỆ THỐNG ANNOTATION ---
+        const annotationData = [
+            {
+                title: "Sân bay trực thăng (Helipad)",
+                desc: "Khu vực hạ cánh nhô ra phía mũi tàu, thiết kế lưới an toàn chuẩn cho trực thăng cứu hộ.",
+                position: new THREE.Vector3(0, 3.2, -5.5) 
+            },
+            {
+                title: "Buồng lái toàn cảnh (Bridge)",
+                desc: "Trung tâm chỉ huy được bọc kính 360 độ, trang bị hệ thống định vị động (DP2).",
+                position: new THREE.Vector3(0, 4.2, -2.5) 
+            },
+            {
+                title: "Boong chở hàng (Aft Deck)",
+                desc: "Khu vực boong rộng chở hàng hóa, ống khoan và hóa chất phục vụ giàn khoan dầu.",
+                position: new THREE.Vector3(0.5, 2.5, 1.5) 
+            },
+            {
+                title: "Cần cẩu hạng nặng (Crane)",
+                desc: "Cẩu trục công suất lớn dùng để bốc dỡ hàng hóa và thiết bị ngầm dưới biển.",
+                position: new THREE.Vector3(-1.0, 3.5, 3.5) 
+            }
+        ];
+
+        const markersContainer = document.getElementById('markers-container');
+        const detailPanel = document.getElementById('detail-panel');
+        const detailTitle = document.getElementById('detail-title');
+        const detailDesc = document.getElementById('detail-desc');
+        
+        const markerElements = [];
+
+        annotationData.forEach((data) => {
+            const el = document.createElement('div');
+            el.className = 'marker';
+            el.innerHTML = `
+                <div class="marker-ring"></div>
+                <div class="marker-dot"></div>
+            `;
+            
+            el.addEventListener('mouseenter', () => {
+                detailTitle.textContent = data.title;
+                detailDesc.textContent = data.desc;
+                detailPanel.style.opacity = '1';
+                isHoveringMarker = true; 
+            });
+
+            el.addEventListener('mouseleave', () => {
+                detailPanel.style.opacity = '0';
+                isHoveringMarker = false; 
+            });
+
+            markersContainer.appendChild(el);
+            
+            markerElements.push({
+                element: el,
+                position3D: data.position
+            });
+        });
+
+        const tempVector = new THREE.Vector3();
+        
+        function updateMarkers() {
+            markerElements.forEach((marker) => {
+                tempVector.copy(marker.position3D);
+                tempVector.applyMatrix4(vessel.matrixWorld);
+                tempVector.project(camera);
+
+                if (tempVector.z > 1) {
+                    marker.element.style.display = 'none';
+                    return;
+                }
+
+                const x = (tempVector.x * .5 + .5) * window.innerWidth;
+                const y = (tempVector.y * -.5 + .5) * window.innerHeight;
+
+                marker.element.style.display = 'flex';
+                marker.element.style.left = `${x}px`;
+                marker.element.style.top = `${y}px`;
+            });
+        }
+
+        // --- 5. ĐIỀU KHIỂN & VÒNG LẶP ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.maxPolarAngle = Math.PI / 2 - 0.05;
+        controls.minDistance = 6;
+        controls.maxDistance = 25;
+
+        // Xử lý sự kiện: Dừng xoay khi chạm, Xoay lại khi nhả tay (Yêu cầu 2)
+        controls.addEventListener('start', () => {
+            isUserInteracting = true; 
+        });
+        
+        controls.addEventListener('end', () => {
+            isUserInteracting = false; // Nhả chuột ra thì biến này thành false -> tàu xoay tiếp
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            
+            // Xoay tàu nếu người dùng không chạm và không hover marker
+            if (autoRotate && !isUserInteracting && !isHoveringMarker) {
+                vessel.rotation.y += 0.003; 
+            }
+
+            // Radar trên nóc tàu luôn luôn quay quét liên tục
+            if (radarScanner) {
+                radarScanner.rotation.y += 0.05;
+            }
+
+            // Hiệu ứng dập dềnh mô phỏng tàu nổi trên sóng
+            const time = Date.now() * 0.0015;
+            vessel.position.y = Math.sin(time) * 0.05;
+
+            updateMarkers();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
